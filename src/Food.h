@@ -2,8 +2,6 @@
 #define FOOD_H
 
 #include "Snake.h"
-#include <cstdlib>
-#include <ctime>
 
 class Food {
 private:

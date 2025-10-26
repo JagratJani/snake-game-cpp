@@ -1,5 +1,5 @@
 #include "Snake.h"
-#include <cstddef>  // Add this include for size_t
+#include <cstddef>
 
 Snake::Snake(int width, int height) : maxX(width), maxY(height), grown(false) {
     // Initialize snake in the middle of the screen

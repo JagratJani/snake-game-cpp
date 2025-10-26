@@ -3,6 +3,8 @@
 
 #include "Snake.h"
 #include "Food.h"
+#include "HighScore.h"
+#include "SoundManager.h"  // Add this line
 
 class Game {
 private:
@@ -11,13 +13,23 @@ private:
     
     Snake snake;
     Food food;
+    HighScore highScore;
+    SoundManager soundManager;  // Add this line
     int score;
     bool gameOver;
+    bool paused;
     
     void Draw();
     void Input();
     void Logic();
     void GameOverScreen();
+    void EnterHighScore();
+    void Reset();
+    void PauseGame();
+    void ShowMainMenu();
+    void ShowHelpScreen();
+    void DrawMenuBorder();
+    void StartGame();
     
 public:
     Game();
