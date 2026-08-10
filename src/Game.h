@@ -15,12 +15,15 @@ private:
     static const int HEIGHT = 20;
     
     Snake snake;
+    Snake snake2;
     Food food;
     HighScore highScore;
     SoundManager soundManager;
     ColorManager colorManager;
     std::vector<std::pair<int, int>> obstacles;
     int score;
+    int score2;
+    int losingPlayer;
     bool gameOver;
     bool paused;
     
@@ -39,6 +42,7 @@ private:
     void DrawMenuBorder();
     void StartGame();
     void GenerateObstacles();
+    void GenerateFoodForBothSnakes();
     
 public:
     Game();
