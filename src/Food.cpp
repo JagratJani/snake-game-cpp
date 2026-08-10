@@ -8,14 +8,14 @@ Food::Food(int width, int height) : maxX(width), maxY(height), type(REGULAR), ac
     // Don't initialize random here - lazy initialization
 }
 
-void Food::Generate(const Snake& snake) {
+void Food::Generate(const Snake& snake, const Snake& snake2) {
    
     
     // Default to regular food
-    GenerateWithObstacles(snake, std::vector<std::pair<int, int>>());
+    GenerateWithObstacles(snake, snake2, std::vector<std::pair<int, int>>());
 }
 
-void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair<int, int>>& obstacles) {
+void Food::GenerateWithObstacles(const Snake& snake, const Snake& snake2, const std::vector<std::pair<int, int>>& obstacles) {
     
     
     // Default to regular food
@@ -29,13 +29,14 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
         y = rand() % maxY;
         
         // Check if position is on snake head
-        if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
+        if ((x == snake.GetHeadX() && y == snake.GetHeadY()) ||
+            (x == snake2.GetHeadX() && y == snake2.GetHeadY())) {
             invalidPosition = true;
             continue;
         }
         
         // Check if position is on snake body
-        if (snake.IsBody(x, y)) {
+        if (snake.IsBody(x, y) || snake2.IsBody(x, y)) {
             invalidPosition = true;
             continue;
         }
@@ -53,7 +54,7 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
     active = true;
 }
 
-void Food::GenerateSpecialFood(const Snake& snake) {
+void Food::GenerateSpecialFood(const Snake& snake, const Snake& snake2) {
    
     
     // Generate position first (same logic as regular food)
@@ -64,12 +65,13 @@ void Food::GenerateSpecialFood(const Snake& snake) {
         x = rand() % maxX;
         y = rand() % maxY;
         
-        if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
+        if ((x == snake.GetHeadX() && y == snake.GetHeadY()) ||
+            (x == snake2.GetHeadX() && y == snake2.GetHeadY())) {
             invalidPosition = true;
             continue;
         }
         
-        if (snake.IsBody(x, y)) {
+        if (snake.IsBody(x, y) || snake2.IsBody(x, y)) {
             invalidPosition = true;
             continue;
         }

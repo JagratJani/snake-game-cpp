@@ -17,7 +17,7 @@ private:
     bool grown;
     
 public:
-    Snake(int width, int height);
+    Snake(int width, int height, int startX = -1, int startY = -1);
     
     void ChangeDirection(Direction newDir);
     void Move();

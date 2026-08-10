@@ -15,14 +15,17 @@ private:
     static const int HEIGHT = 20;
     
     Snake snake;
+    Snake snake2;
     Food food;
     HighScore highScore;
     SoundManager soundManager;
     ColorManager colorManager;
     std::vector<std::pair<int, int>> obstacles;
     int score;
+    int score2;
     bool gameOver;
     bool paused;
+    int loserPlayer;
     
     // Track food count for special food spawning
     int foodCount;

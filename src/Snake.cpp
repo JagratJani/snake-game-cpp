@@ -1,8 +1,10 @@
 #include "Snake.h"
 #include <cstddef>
 
-Snake::Snake(int width, int height) : maxX(width), maxY(height), grown(false) {
-    Segment head = { width / 2, height / 2 };
+Snake::Snake(int width, int height, int startX, int startY) : maxX(width), maxY(height), grown(false) {
+    int hX = (startX == -1) ? width / 2 : startX;
+    int hY = (startY == -1) ? height / 2 : startY;
+    Segment head = { hX, hY };
     body.push_back(head);
     
     for (int i = 1; i < 3; i++) {
