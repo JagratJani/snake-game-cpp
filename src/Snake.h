@@ -18,6 +18,7 @@ private:
     
 public:
     Snake(int width, int height);
+    Snake(int width, int height, int startX, int startY, Direction startDir);
     
     void ChangeDirection(Direction newDir);
     void Move();

@@ -9,9 +9,20 @@
 
 using namespace std;
 
-Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(false), paused(false), foodCount(0) {
+Game::Game() : snake(WIDTH, HEIGHT, WIDTH / 2 - 4, HEIGHT / 2, RIGHT), 
+               snake2(WIDTH, HEIGHT, WIDTH / 2 + 4, HEIGHT / 2, LEFT), 
+               food(WIDTH, HEIGHT), score(0), score2(0), losingPlayer(0), 
+               gameOver(false), paused(false), foodCount(0) {
     GenerateObstacles();
-    food.GenerateWithObstacles(snake, obstacles);
+    GenerateFoodForBothSnakes();
+}
+
+void Game::GenerateFoodForBothSnakes() {
+    std::vector<std::pair<int, int>> allObstacles = obstacles;
+    for (const auto& seg : snake2.GetBody()) {
+        allObstacles.push_back({seg.x, seg.y});
+    }
+    food.GenerateWithObstacles(snake, allObstacles);
 }
 
 void Game::GenerateObstacles() {
@@ -253,19 +264,11 @@ void Game::ShowHelpScreen() {
     
     coord.Y += 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << "  W / Up Arrow   - Move Up" << endl;
+    cout << "  Player 1: Arrow Keys (Up/Down/Left/Right)" << endl;
     
     coord.Y += 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << "  S / Down Arrow - Move Down" << endl;
-
-    coord.Y += 1;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << "  A / Left Arrow - Move Left" << endl;
-
-    coord.Y += 1;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << "  D / Right Arrow - Move Right" << endl;
+    cout << "  Player 2: W / A / S / D" << endl;
 
     coord.Y += 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
@@ -311,13 +314,16 @@ void Game::ShowHelpScreen() {
 
 void Game::Reset() {
     system("cls");
-    snake = Snake(WIDTH, HEIGHT);
+    snake = Snake(WIDTH, HEIGHT, WIDTH / 2 - 4, HEIGHT / 2, RIGHT);
+    snake2 = Snake(WIDTH, HEIGHT, WIDTH / 2 + 4, HEIGHT / 2, LEFT);
     GenerateObstacles();
-    food.GenerateWithObstacles(snake, obstacles);
+    GenerateFoodForBothSnakes();
     score = 0;
+    score2 = 0;
+    losingPlayer = 0;
     gameOver = false;
     paused = false;
-    foodCount = 0; // Reset food counter
+    foodCount = 0;
 }
 
 void Game::Draw() {
@@ -365,12 +371,20 @@ void Game::Draw() {
                 colorManager.SetColor(ColorManager::SNAKE_BODY);
                 cout << "\xDB\xDB";  // Double width block body
             }
+            else if (x == snake2.GetHeadX() && y == snake2.GetHeadY()) {
+                colorManager.SetColor(ColorManager::MENU_SELECTED);
+                cout << "\xDB\xDB";  // Player 2 head
+            }
+            else if (snake2.IsBody(x, y)) {
+                colorManager.SetColor(ColorManager::MENU_TITLE);
+                cout << "\xDB\xDB";  // Player 2 body
+            }
             else if (x == food.GetX() && y == food.GetY() && food.IsActive()) {
                 // Use food's own color and character
                 colorManager.SetColor(food.GetColor());
                 cout << food.GetDisplayChar() << food.GetDisplayChar(); // Double width
                 colorManager.SetColor(ColorManager::WALL);
-}
+            }
             else {
                 cout << "  ";  // Double width space
             }
@@ -390,25 +404,17 @@ void Game::Draw() {
     // Reset color for text
     colorManager.ResetColor();
     
-    // Score with color - Bright White
+    // Scores with color - Bright White
     colorManager.SetColor(ColorManager::SCORE);
-    cout << "Score: " << score;
-    int padding = 30 - (7 + to_string(score).length());
-    if (padding > 0) cout << string(padding, ' ');
-    cout << endl;
+    cout << "P1 Score: " << score << "   |   P2 Score: " << score2 << "                     " << endl;
     
     // Status line with colors
     if (paused) {
         colorManager.SetColor(ColorManager::MENU_TITLE);
         PauseGame();
     } else {
-        if (highScore.IsHighScore(score)) {
-            colorManager.SetColor(ColorManager::HIGH_SCORE);
-            cout << "High Score Potential! | Controls: WASD/Arrows, P=Pause, X=Exit" << endl;
-        } else {
-            colorManager.SetColor(ColorManager::SCORE);
-            cout << "Controls: WASD/Arrows, P=Pause, X=Exit" << endl;
-        }
+        colorManager.SetColor(ColorManager::SCORE);
+        cout << "Controls: P1 (Arrows), P2 (WASD), P=Pause, X=Exit              " << endl;
     }
     
     // Clear any remaining lines to prevent ghost text
@@ -420,7 +426,7 @@ void Game::Draw() {
 }
 
 void Game::Input() {
-    if (_kbhit()) {
+    while (_kbhit()) {
         int key = _getch();
         
         if (paused) {
@@ -440,12 +446,12 @@ void Game::Input() {
             }
         } else {
             switch (key) {
-                case 'w': case 'W': snake.ChangeDirection(UP); break;
-                case 's': case 'S': snake.ChangeDirection(DOWN); break;
-                case 'a': case 'A': snake.ChangeDirection(LEFT); break;
-                case 'd': case 'D': snake.ChangeDirection(RIGHT); break;
+                case 'w': case 'W': snake2.ChangeDirection(UP); break;
+                case 's': case 'S': snake2.ChangeDirection(DOWN); break;
+                case 'a': case 'A': snake2.ChangeDirection(LEFT); break;
+                case 'd': case 'D': snake2.ChangeDirection(RIGHT); break;
                 case 'p': case 'P': PauseGame(); break;
-                case 'x': case 'X': gameOver = true; break;
+                case 'x': case 'X': gameOver = true; losingPlayer = 0; break;
             }
         }
     }
@@ -455,58 +461,73 @@ void Game::Logic() {
     if (paused) return;
     
     snake.Move();
+    snake2.Move();
     
-    int headX = snake.GetHeadX();
-    int headY = snake.GetHeadY();
+    int head1X = snake.GetHeadX();
+    int head1Y = snake.GetHeadY();
+    int head2X = snake2.GetHeadX();
+    int head2Y = snake2.GetHeadY();
+    
+    bool p1Lost = false;
+    bool p2Lost = false;
     
     // Check wall collisions
-    if (headX < 0 || headX >= WIDTH || headY < 0 || headY >= HEIGHT) {
-        EnterHighScore();
-        gameOver = true;
-        return;
-    }
+    if (head1X < 0 || head1X >= WIDTH || head1Y < 0 || head1Y >= HEIGHT) p1Lost = true;
+    if (head2X < 0 || head2X >= WIDTH || head2Y < 0 || head2Y >= HEIGHT) p2Lost = true;
     
     // Check obstacle collisions
     for (const auto& obstacle : obstacles) {
-        if (headX == obstacle.first && headY == obstacle.second) {
-            EnterHighScore();
-            gameOver = true;
-            return;
-        }
+        if (head1X == obstacle.first && head1Y == obstacle.second) p1Lost = true;
+        if (head2X == obstacle.first && head2Y == obstacle.second) p2Lost = true;
     }
     
-    // Check self collision
-    if (snake.CheckSelfCollision()) {
+    // Check self collisions
+    if (snake.CheckSelfCollision()) p1Lost = true;
+    if (snake2.CheckSelfCollision()) p2Lost = true;
+    
+    // Check cross collisions
+    if (snake2.IsBody(head1X, head1Y)) p1Lost = true;
+    if (snake.IsBody(head2X, head2Y)) p2Lost = true;
+    
+    // Head to head collision
+    if (head1X == head2X && head1Y == head2Y) {
+        p1Lost = true;
+        p2Lost = true;
+    }
+    
+    if (p1Lost || p2Lost) {
+        if (p1Lost && p2Lost) losingPlayer = 3;
+        else if (p1Lost) losingPlayer = 1;
+        else losingPlayer = 2;
+        
         EnterHighScore();
         gameOver = true;
         return;
     }
     
-    // Check food collision
-    if (headX == food.GetX() && headY == food.GetY() && food.IsActive()) {
-        // Play sound based on food type
+    // Check food collisions
+    bool p1Ate = (head1X == food.GetX() && head1Y == food.GetY() && food.IsActive());
+    bool p2Ate = (head2X == food.GetX() && head2Y == food.GetY() && food.IsActive());
+    
+    if (p1Ate || p2Ate) {
         if (food.GetType() == Food::GOLDEN) {
-            Beep(1000, 200); // Special sound for golden food
+            Beep(1000, 200);
             Beep(1200, 200);
         } else {
-            soundManager.PlayEatSound(); // Regular sound
+            soundManager.PlayEatSound();
         }
         
-        // Add points based on food type
-        score += food.GetPoints();
-        snake.Grow();
+        if (p1Ate) {
+            score += food.GetPoints();
+            snake.Grow();
+        }
+        if (p2Ate) {
+            score2 += food.GetPoints();
+            snake2.Grow();
+        }
         
-        // Increment food counter
         foodCount++;
-        
-        // Every 5th food is golden, others are regular
-        if (foodCount % 5 == 0) {
-            // Spawn golden food
-            food.GenerateSpecialFood(snake);
-        } else {
-            // Spawn regular food
-            food.GenerateWithObstacles(snake, obstacles);
-        }
+        GenerateFoodForBothSnakes();
     }
 }
 
@@ -566,36 +587,23 @@ void Game::EnterHighScore() {
 void Game::GameOverScreen() {
     system("cls");
     
-    bool isNewHighScore = highScore.IsHighScore(score);
-    
-    if (isNewHighScore) {
-        // Show NEW HIGH SCORE in green instead of GAME OVER
-        colorManager.SetColor(ColorManager::HIGH_SCORE);
-        cout << "##############################" << endl;
-        cout << "#       NEW HIGH SCORE!     #" << endl;
-        cout << "##############################" << endl;
-        
-        // Score in GREEN for new high score
-        colorManager.SetColor(ColorManager::HIGH_SCORE);
-        cout << "        Final Score: " << score << endl;
-        
-        // Bottom border in green
-        colorManager.SetColor(ColorManager::HIGH_SCORE);
-        cout << "##############################" << endl;
+    colorManager.SetColor(ColorManager::GAME_OVER);
+    cout << "########################" << endl;
+    if (losingPlayer == 1) {
+        cout << "#    PLAYER 1 LOST!    #" << endl;
+    } else if (losingPlayer == 2) {
+        cout << "#    PLAYER 2 LOST!    #" << endl;
     } else {
-        // Show regular GAME OVER in red
-        colorManager.SetColor(ColorManager::GAME_OVER);
-        cout << "########################" << endl;
-        cout << "#      GAME OVER      #" << endl;
-        cout << "########################" << endl;
-        
-        // Score in White for regular game over
-        colorManager.SetColor(ColorManager::SCORE);
-        cout << "     Final Score: " << score << endl;
-        
-        colorManager.SetColor(ColorManager::GAME_OVER);
-        cout << "########################" << endl;
+        cout << "#   BOTH PLAYERS LOST! #" << endl;
     }
+    cout << "########################" << endl;
+    
+    colorManager.SetColor(ColorManager::SCORE);
+    cout << "  Player 1 Score: " << score << endl;
+    cout << "  Player 2 Score: " << score2 << endl;
+    
+    colorManager.SetColor(ColorManager::GAME_OVER);
+    cout << "########################" << endl;
     
     colorManager.ResetColor();
     cout << endl;
