@@ -13,6 +13,23 @@ Snake::Snake(int width, int height) : maxX(width), maxY(height), grown(false) {
     dir = RIGHT;
 }
 
+Snake::Snake(int width, int height, int startX, int startY, Direction startDir)
+    : maxX(width), maxY(height), dir(startDir), grown(false) {
+    Segment head = { startX, startY };
+    body.push_back(head);
+
+    int dx = 0, dy = 0;
+    if (startDir == RIGHT) dx = -1;
+    else if (startDir == LEFT) dx = 1;
+    else if (startDir == DOWN) dy = -1;
+    else if (startDir == UP) dy = 1;
+
+    for (int i = 1; i < 3; i++) {
+        Segment segment = { head.x + i * dx, head.y + i * dy };
+        body.push_back(segment);
+    }
+}
+
 void Snake::ChangeDirection(Direction newDir) {
     if ((dir == LEFT && newDir != RIGHT) ||
         (dir == RIGHT && newDir != LEFT) ||

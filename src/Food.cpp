@@ -16,11 +16,13 @@ void Food::Generate(const Snake& snake) {
 }
 
 void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair<int, int>>& obstacles) {
-    
-    
-    // Default to regular food
+    std::vector<Snake> snakes;
+    snakes.push_back(snake);
+    GenerateWithObstacles(snakes, obstacles);
+}
+
+void Food::GenerateWithObstacles(const std::vector<Snake>& snakes, const std::vector<std::pair<int, int>>& obstacles) {
     type = REGULAR;
-    
     bool invalidPosition;
     
     do {
@@ -28,19 +30,18 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
         x = rand() % maxX;
         y = rand() % maxY;
         
-        // Check if position is on snake head
-        if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
-            invalidPosition = true;
-            continue;
+        for (const auto& s : snakes) {
+            if (x == s.GetHeadX() && y == s.GetHeadY()) {
+                invalidPosition = true;
+                break;
+            }
+            if (s.IsBody(x, y)) {
+                invalidPosition = true;
+                break;
+            }
         }
+        if (invalidPosition) continue;
         
-        // Check if position is on snake body
-        if (snake.IsBody(x, y)) {
-            invalidPosition = true;
-            continue;
-        }
-        
-        // Check if position is on any obstacle
         for (const auto& obstacle : obstacles) {
             if (x == obstacle.first && y == obstacle.second) {
                 invalidPosition = true;
