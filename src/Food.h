@@ -4,6 +4,7 @@
 #include "Snake.h"
 #include <vector>
 #include <utility>
+#include <cstdlib>   // for std::rand
 
 class Food {
 public:
@@ -19,6 +20,12 @@ private:
     bool active;
 
 public:
+    // Seam: function pointer for random number generation.
+    // Defaults to std::rand; replace in tests to get deterministic positions.
+    // Signature matches std::rand: int().
+    using RandFn = int (*)();
+    static RandFn randSource;
+
     Food(int width, int height);
     void Generate(const Snake& snake);
     void GenerateWithObstacles(const Snake& snake, const std::vector<std::pair<int, int>>& obstacles);
