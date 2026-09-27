@@ -2,6 +2,10 @@
 #include <cstdlib>
 #include <ctime>
 
+// Define and default the rand seam to std::rand.
+// Production code sees identical behavior; tests can inject a stub.
+Food::RandFn Food::randSource = std::rand;
+
 // Initialize random seed only once
 
 Food::Food(int width, int height) : maxX(width), maxY(height), type(REGULAR), active(false) {
@@ -25,8 +29,8 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
     
     do {
         invalidPosition = false;
-        x = rand() % maxX;
-        y = rand() % maxY;
+        x = randSource() % maxX;
+        y = randSource() % maxY;
         
         // Check if position is on snake head
         if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
@@ -61,8 +65,8 @@ void Food::GenerateSpecialFood(const Snake& snake) {
     
     do {
         invalidPosition = false;
-        x = rand() % maxX;
-        y = rand() % maxY;
+        x = randSource() % maxX;
+        y = randSource() % maxY;
         
         if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
             invalidPosition = true;
